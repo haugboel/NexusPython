@@ -26,7 +26,8 @@ def osyris2Dslab(self, variables,
                  resolution = 400, 
                  viewpoint = 'face-on', 
                  weights = [None], 
-                 verbose = 1):
+                 verbose = 1,
+                 use_trans_pos=False):
 
     #### For storing data ####
     try: self.osyris_ivs[data_name] = {}
@@ -38,6 +39,8 @@ def osyris2Dslab(self, variables,
 
     ds = self.amr['ds'][mask]
     cartcoor = self.rel_xyz[:,mask]
+    if use_trans_pos:
+        cartcoor = self.trans_xyz[:,mask]
 
     values = {ivs: [] for ivs in variables}
     for i, ivs in enumerate(variables):
@@ -72,6 +75,14 @@ def osyris2Dslab(self, variables,
 
     if (viewpoint == np.array(['x', 'y', 'z'])).any():
         to_view = viewpoint
+    # Example of viewpoint dictionary:
+    # viewpoint = {'view_vector:':np.array([1,0,0]), 'new_x': np.array([0,1,0]), 'new_y': np.array([0,0,1])}
+    elif type(viewpoint) == dict:
+        dir_vecs = {}
+        dir_vecs['pos_u'] = osyris.Vector(*viewpoint['new_x'])
+        dir_vecs['pos_v'] = osyris.Vector(*viewpoint['new_y'])
+        dir_vecs['normal'] = osyris.Vector(*viewpoint['view_vector'])
+        to_view = dir_vecs
     else:
         dir_vecs = {}
         dir_vecs['pos_u'] = osyris.Vector(*self.new_x)
@@ -105,12 +116,12 @@ def osyris2Dslab(self, variables,
         DS['hydro'][ivs] = osyris.Array(weights_dict[ivs] * values[ivs], unit = 'dimensionless')
 
         res = osyris.map({"data": DS['hydro'][ivs], "norm": "log"}, dx=view, dy = height, dz = dz, 
-                         origin=center, resolution=resolution, direction=to_view, plot=False, operation = "sum")
+                         origin=center, resolution=resolution, direction=to_view, plot=False, operation = "sum", verbose=verbose)
                 
         if type(weights[i]) == str: 
             DS['hydro']['w'] = osyris.Array(weights_dict[ivs], unit = 'dimensionless')
             res_weight = osyris.map({"data": DS['hydro']['w'], "norm": "log"}, dx = view, dy = height, dz = dz, 
-                             origin=center, resolution=resolution, direction=to_view, plot=False, operation = "sum")
+                             origin=center, resolution=resolution, direction=to_view, plot=False, operation = "sum", verbose=verbose)
             final_weights = res_weight.layers[0]['data']
             
         else: final_weights = np.ones_like(res.layers[0]['data'])

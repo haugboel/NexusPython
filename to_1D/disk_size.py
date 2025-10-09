@@ -117,10 +117,12 @@ def calc_disksize(self,
     indencies_below = np.array(kappa2 < 0, dtype = 'int')
     if sum(indencies_below) == 0 or (indencies_below == 1).all(): keplerian_disk = False
     gradient = np.gradient(kappa2, r_plot)
+    ints2grad = int(smooth_pct * len(r_plot)) // 2
     for j, r_au in enumerate(R):
-        if kappa2[j] < 0 and gradient[j] < 0 and ~np.isnan(gradient[j]):
-            self.disksize['Rayleigh'][0] = R[j] * self.code2au
-            self.disksize['Rayleigh'][1] = abs(np.gradient(kappa2, R)[j]**(-1) *  sigma_kappa2[j]) * self.code2au
+        running_gradient = gradient[j - ints2grad: j + ints2grad]
+        if kappa2[j] < 0 and running_gradient.mean() < 0 and ~np.isnan(gradient[j]):
+            self.disksize['Rayleigh'][0] = r_au * self.code2au
+            self.disksize['Rayleigh'][1] = abs(running_gradient.mean()**(-1) *  sigma_kappa2[j]) * self.code2au
             break
 
     mean = ((self.disksize['Velocity drop'][0] / self.disksize['Velocity drop'][1]**2 
@@ -220,10 +222,12 @@ def calc_disksize_postprocessing(self,
     indencies_below = np.array(kappa2 < 0, dtype = 'int')
     if sum(indencies_below) == 0 or (indencies_below == 1).all(): keplerian_disk = False
     gradient = np.gradient(kappa2, r_plot)
+    ints2grad = int(smooth_pct * len(r_plot)) // 2
     for j, r_au in enumerate(R):
-        if kappa2[j] < 0 and gradient[j] < 0 and ~np.isnan(gradient[j]):
-            disksize['Rayleigh'][0] = R[j] * self.code2au
-            disksize['Rayleigh'][1] = abs(np.gradient(kappa2, R)[j]**(-1) *  sigma_kappa2[j]) * self.code2au
+        running_gradient = gradient[j - ints2grad: j + ints2grad]
+        if kappa2[j] < 0 and running_gradient.mean() < 0 and ~np.isnan(gradient[j]):
+            disksize['Rayleigh'][0] = r_au * self.code2au
+            disksize['Rayleigh'][1] = abs(running_gradient.mean()**(-1) *  sigma_kappa2[j]) * self.code2au
             break
 
     # Weigthed mean and uncertainty:

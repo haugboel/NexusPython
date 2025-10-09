@@ -56,7 +56,7 @@ def azimuthal_avg(self,
     theta_bins, r_bins = get_bins((theta_grid, r_grid))
 
     # Full theta ensures that the range goes from -π/2 to π/2
-    full_theta = np.insert(theta_bins, [0, len(theta_bins)], [np.pi/2, -np.pi/2])
+    full_theta = np.insert(theta_bins, [0, len(theta_bins)], [-np.pi/2, np.pi/2])
     
     coor = (theta_bins, r_bins) 
     new_coor = (full_theta, r_bins)

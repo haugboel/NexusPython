@@ -44,7 +44,7 @@ def load_DISPATCH(self, snap, path, loading_bar, verbose):
 
     #Sort the patces according to their level
     if self.data_sphere_au == None:
-        pp = [p for p in sn.patches]
+        pp = [p for p in sn.patches if p.level > self.lv_cut]
     else:
         pp = [p for p in sn.patches 
               if (np.linalg.norm(np.array(np.meshgrid(p.xi, p.yi, p.zi, indexing='ij')) - self.sink_pos[:,None,None,None], axis = 0) < self.data_sphere_au / self.code2au).any()  

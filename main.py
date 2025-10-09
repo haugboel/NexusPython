@@ -33,11 +33,10 @@ class dataclass:
         snapshots = np.arange(sn_start, sn_end + 1)
         self.sink_data = {}
         if io == 'DISPATCH':
-            args = [(snapshot, sink_id, path) for snapshot in snapshots]
             n_cpu = np.minimum(mp.cpu_count(), np.shape(snapshots))[0]
-            with mp.Pool(n_cpu) as pool:
+            args = [(snapshot, sink_id, path) for snapshot in snapshots]
+            with mp.get_context("fork").Pool(n_cpu) as pool:
                 results = list(pool.starmap(process_snapshot, args))
-
             mass = []; time = [];    
             for cpu_part in results:   
                 if cpu_part == None: continue 
@@ -55,11 +54,11 @@ class dataclass:
                     time = np.delete(time.copy(), i_del)
                     mass = np.delete(mass.copy(), i_del)
                 Δt_mean = np.diff(time).mean()
-                for i, Δt in enumerate(np.diff(time)):
+                for i, Δt in enumerate(np.diff(time), start=1):
                     if Δt > 1.1 *  Δt_mean: 
                         time[i] = time[i-1] + Δt / 2 
             #try:            
-            non_zero_index = np.array([i for i, m in enumerate(mass) if m != 0])
+            non_zero_index = np.array([i for i, m in enumerate(mass) if m >= 1e-20])
 
             if change_t0: self.sink_create = time[non_zero_index[0]]
             mass = np.array(mass)[non_zero_index]
@@ -208,6 +207,9 @@ class dataclass:
             self.new_x = new_x; self.new_y = new_y; self.L = new_L
 
         self.trans_xyz = np.array([np.sum(coor[:, None] * self.rel_xyz, axis=0) for coor in [self.new_x, self.new_y, self.L]]).astype(self.dtype)
+        self.trans_B = np.array([np.sum(coor[:, None] * self.mhd['B'], axis=0) for coor in [self.new_x, self.new_y, self.L]]).astype(self.dtype)
+        self.trans_xyz[self.trans_xyz < - 0.5] += 1
+        self.trans_xyz[self.trans_xyz > 0.5 ] -= 1
         self.trans_vrel = np.array([np.sum(coor[:, None] * self.vrel, axis=0) for coor in [self.new_x, self.new_y, self.L]]).astype(self.dtype)
         proj_r = np.sum(self.cyl_r * self.new_x[:, None], axis=0).astype(self.dtype)
         proj_φ = np.sum(self.cyl_r * self.new_y[:, None], axis=0).astype(self.dtype)
@@ -264,6 +266,7 @@ def process_snapshot(snapshot, sink, path):
     except:
         return 
     return mass, time
+    
 
 def _fill_2Dhist(hist, orig_coor, new_coor, periodic_x = False, method = 'nearest'):
     x, y = orig_coor; x_new, y_new = new_coor
