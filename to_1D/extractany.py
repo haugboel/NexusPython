@@ -64,7 +64,7 @@ def extract_1D(self, variables,
                 else:
                     raw_data[bin - 1].extend(getattr(self, ivs)[mask][bin_index == bin])
                     
-            self.extract1D_ivs[data_name][ivs] = raw_data
+            self.extract1D_ivs[data_name][ivs] = np.array(raw_data)
             continue
 
         weight, _ = np.histogram(R_coor, bins = self.r_bins, weights = weights_dict[ivs])
